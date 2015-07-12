@@ -18,25 +18,37 @@ class ViewController: NSViewController, NSTableViewDataSource {
     @IBOutlet weak var tableView: NSTableView!
 
     @IBAction func onClickExtractButton(sender: AnyObject) {
-        println("Clicked")
-        let filemanager = NSFileManager()
-        var error: NSError?
-        filemanager.createDirectoryAtPath(NSHomeDirectory() + "/Documents/iBooks-exported", withIntermediateDirectories: false, attributes: nil, error: &error)
+        self.progressIndicator.startAnimation(self)
+        dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0)) {
+            let filemanager = NSFileManager()
+            var error: NSError?
+            filemanager.createDirectoryAtPath(NSHomeDirectory() + "/Documents/iBooks-exported", withIntermediateDirectories: false, attributes: nil, error: &error)
 
-        if error != nil {
-            println(error)
-        }
+            if error != nil {
+                println(error)
+            }
 
-        for book in self.books {
-            if let targetPath = self.targetPath(book) {
-                filemanager.copyItemAtPath(book.path, toPath: NSHomeDirectory() + "/Documents/iBooks-exported/" + targetPath, error: &error)
-                if error != nil {
-                    println(error)
+            for book in self.books {
+                if let targetPath = self.targetPath(book) {
+                    filemanager.copyItemAtPath(book.path, toPath: NSHomeDirectory() + "/Documents/iBooks-exported/" + targetPath, error: &error)
+                    if error != nil {
+                        println(error)
+                    }
+                }
+
+
+                dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0)) {
+                    self.progressIndicator.incrementBy(1)
                 }
             }
 
+            dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0)) {
+                self.progressIndicator.stopAnimation(self)
+            }
         }
     }
+
+    @IBOutlet weak var progressIndicator: NSProgressIndicator!
 
     var books: [Book] = []
 
@@ -44,6 +56,9 @@ class ViewController: NSViewController, NSTableViewDataSource {
     override func viewDidLoad() {
         super.viewDidLoad()
         self.getUserBooks()
+        self.progressIndicator.maxValue = Double(self.books.count)
+        self.progressIndicator.minValue = 0
+        self.progressIndicator.indeterminate = false
         self.tableView.setDataSource(self)
     }
 
