@@ -19,10 +19,21 @@ class ViewController: NSViewController, NSTableViewDataSource {
 
     @IBAction func onClickExtractButton(sender: AnyObject) {
         self.progressIndicator.startAnimation(self)
+
+        let exportDir = self.getExportDirectory()?.path
+        if exportDir == nil {
+            return
+        }
+
         dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0)) {
             let filemanager = NSFileManager()
             var error: NSError?
-            filemanager.createDirectoryAtPath(NSHomeDirectory() + "/Documents/iBooks-exported", withIntermediateDirectories: false, attributes: nil, error: &error)
+
+            var isDir = UnsafeMutablePointer<ObjCBool>.alloc(1)
+            var exists = filemanager.fileExistsAtPath(exportDir!, isDirectory: isDir)
+            if  exists && isDir.memory {
+                filemanager.createDirectoryAtPath(exportDir!, withIntermediateDirectories: false, attributes: nil, error: &error)
+            }
 
             if error != nil {
                 println(error)
@@ -30,7 +41,7 @@ class ViewController: NSViewController, NSTableViewDataSource {
 
             for book in self.books {
                 if let targetPath = self.targetPath(book) {
-                    filemanager.copyItemAtPath(book.path, toPath: NSHomeDirectory() + "/Documents/iBooks-exported/" + targetPath, error: &error)
+                    filemanager.copyItemAtPath(book.path, toPath: exportDir! + "/" + targetPath, error: &error)
                     if error != nil {
                         println(error)
                     }
@@ -94,6 +105,20 @@ class ViewController: NSViewController, NSTableViewDataSource {
             default:
                 return nil
         }
+    }
+
+    func getExportDirectory() -> NSURL? {
+        let openDlg = NSOpenPanel()
+        openDlg.canChooseDirectories = true
+        openDlg.canChooseFiles = false
+        openDlg.prompt = "Select export destination"
+        openDlg.canCreateDirectories = true
+
+        if openDlg.runModal() == NSModalResponseOK {
+            return openDlg.directoryURL
+        }
+
+        return nil
     }
 
     private func targetPath(book: Book) -> String? {

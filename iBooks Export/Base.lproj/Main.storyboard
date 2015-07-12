@@ -729,7 +729,7 @@
                                     </subviews>
                                     <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                                 </clipView>
-                                <scroller key="horizontalScroller" verticalHuggingPriority="750" doubleValue="0.019230769230769232" horizontal="YES" id="ihM-xV-aUc">
+                                <scroller key="horizontalScroller" verticalHuggingPriority="750" doubleValue="0.019155557487833565" horizontal="YES" id="ihM-xV-aUc">
                                     <rect key="frame" x="1" y="119" width="223" height="15"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
