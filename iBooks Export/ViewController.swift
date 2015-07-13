@@ -124,7 +124,7 @@ class ViewController: NSViewController, NSTableViewDataSource {
     private func targetPath(book: Book) -> String? {
         if book.displayName != "" {
             if let itemName = book.itemName {
-                return itemName + ".epub"
+                return itemName + "." + book.path.pathExtension
             }
             return nil
         }
@@ -136,11 +136,6 @@ class ViewController: NSViewController, NSTableViewDataSource {
         if let infoBooks: AnyObject = info?.objectForKey("Books") {
             for info in infoBooks as! [AnyObject] {
                 let path = info.objectForKey("path") as! String
-
-                if path.pathExtension != "epub" {
-                    continue
-                }
-
                 let displayName = info.objectForKey("BKDisplayName") as! String
                 let itemName = info.objectForKey("itemName") as? String
                 self.books.append(Book(itemName: itemName, displayName: displayName, path: path))
