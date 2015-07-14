@@ -1,6 +1,7 @@
 iBooks Export
 =============
-Makes exporting an iBooks library easy.
+Very simple Swift OSX app that makes exporting an iBooks library easy. Made
+primarily for educational purposes.
 
 ![demo](/demo.gif)
 
