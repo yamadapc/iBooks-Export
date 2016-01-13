@@ -29,21 +29,38 @@ class ViewController: NSViewController, NSTableViewDataSource {
             let filemanager = NSFileManager()
             var error: NSError?
 
-            var isDir = UnsafeMutablePointer<ObjCBool>.alloc(1)
-            var exists = filemanager.fileExistsAtPath(exportDir!, isDirectory: isDir)
-            if  exists && isDir.memory {
-                filemanager.createDirectoryAtPath(exportDir!, withIntermediateDirectories: false, attributes: nil, error: &error)
+            let isDir = UnsafeMutablePointer<ObjCBool>.alloc(1)
+            let exists = filemanager.fileExistsAtPath(exportDir!, isDirectory: isDir)
+            if !exists && isDir.memory {
+                do {
+                    try filemanager.createDirectoryAtPath(exportDir!, withIntermediateDirectories: false, attributes: nil)
+                } catch let error1 as NSError {
+                    error = error1
+                } catch {
+                    fatalError()
+                }
             }
 
             if error != nil {
-                println(error)
+                print(error)
             }
 
             for book in self.books {
                 if let targetPath = self.targetPath(book) {
-                    filemanager.copyItemAtPath(book.path, toPath: exportDir! + "/" + targetPath, error: &error)
+                    if filemanager.fileExistsAtPath(exportDir! + "/" + targetPath) {
+                        self.progressIndicator.incrementBy(1)
+                        continue
+                    }
+                    
+                    do {
+                        try filemanager.copyItemAtPath(book.path, toPath: exportDir! + "/" + targetPath)
+                    } catch let error1 as NSError {
+                        error = error1
+                    } catch {
+                        fatalError()
+                    }
                     if error != nil {
-                        println(error)
+                        print(error)
                     }
                 }
 
@@ -101,7 +118,7 @@ class ViewController: NSViewController, NSTableViewDataSource {
             case "displayName":
                 return book.displayName
             case "path":
-                return book.path.lastPathComponent
+                return (book.path as NSString).lastPathComponent
             default:
                 return nil
         }
@@ -124,7 +141,7 @@ class ViewController: NSViewController, NSTableViewDataSource {
     private func targetPath(book: Book) -> String? {
         if book.displayName != "" {
             if let itemName = book.itemName {
-                return itemName + "." + book.path.pathExtension
+                return itemName + "." + (book.path as NSString).pathExtension
             }
             return nil
         }

@@ -153,6 +153,8 @@
 		667EACAB1B51F68800E09272 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				LastSwiftMigration = 0720;
+				LastSwiftUpdateCheck = 0720;
 				LastUpgradeCheck = 0640;
 				ORGANIZATIONNAME = pty;
 				TargetAttributes = {
@@ -400,6 +402,7 @@
 				667EACD11B51F68800E09272 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		667EACD21B51F68800E09272 /* Build configuration list for PBXNativeTarget "iBooks ExportTests" */ = {
 			isa = XCConfigurationList;
@@ -408,6 +411,7 @@
 				667EACD41B51F68800E09272 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
