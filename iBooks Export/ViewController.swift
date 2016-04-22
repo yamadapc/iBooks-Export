@@ -26,53 +26,7 @@ class ViewController: NSViewController, NSTableViewDataSource {
         }
 
         dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0)) {
-            let filemanager = NSFileManager()
-            var error: NSError?
-
-            let isDir = UnsafeMutablePointer<ObjCBool>.alloc(1)
-            let exists = filemanager.fileExistsAtPath(exportDir!, isDirectory: isDir)
-            if !exists && isDir.memory {
-                do {
-                    try filemanager.createDirectoryAtPath(exportDir!, withIntermediateDirectories: false, attributes: nil)
-                } catch let error1 as NSError {
-                    error = error1
-                } catch {
-                    fatalError()
-                }
-            }
-
-            if error != nil {
-                print(error)
-            }
-
-            for book in self.books {
-                if let targetPath = self.targetPath(book) {
-                    if filemanager.fileExistsAtPath(exportDir! + "/" + targetPath) {
-                        self.progressIndicator.incrementBy(1)
-                        continue
-                    }
-                    
-                    do {
-                        try filemanager.copyItemAtPath(book.path, toPath: exportDir! + "/" + targetPath)
-                    } catch let error1 as NSError {
-                        error = error1
-                    } catch {
-                        fatalError()
-                    }
-                    if error != nil {
-                        print(error)
-                    }
-                }
-
-
-                dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0)) {
-                    self.progressIndicator.incrementBy(1)
-                }
-            }
-
-            dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0)) {
-                self.progressIndicator.stopAnimation(self)
-            }
+            self.runExport(exportDir!)
         }
     }
 
@@ -93,6 +47,65 @@ class ViewController: NSViewController, NSTableViewDataSource {
     override var representedObject: AnyObject? {
         didSet {
         // Update the view, if already loaded.
+        }
+    }
+    
+    func runExport(exportDir: String) {
+        let filemanager = NSFileManager()
+        var error: NSError?
+        
+        let isDir = UnsafeMutablePointer<ObjCBool>.alloc(1)
+        let exists = filemanager.fileExistsAtPath(exportDir, isDirectory: isDir)
+        if !exists && isDir.memory {
+            do {
+                try filemanager.createDirectoryAtPath(exportDir, withIntermediateDirectories: false, attributes: nil)
+            } catch let error1 as NSError {
+                error = error1
+            } catch {
+                fatalError()
+            }
+        }
+        
+        if error != nil {
+            print(error)
+        }
+        
+        for book in self.books {
+            self.exportBook(filemanager, exportDir: exportDir, book: book)
+        }
+
+        self.onExport()
+    }
+    
+    func exportBook(filemanager: NSFileManager, exportDir: String, book: Book) {
+        if let targetPath = self.targetPath(book) {
+            if filemanager.fileExistsAtPath(exportDir + "/" + targetPath) {
+                self.progressIndicator.incrementBy(1)
+                return
+            }
+            
+            var error: NSError?
+            do {
+                try filemanager.copyItemAtPath(book.path, toPath: exportDir + "/" + targetPath)
+            } catch let error1 as NSError {
+                error = error1
+            } catch {
+                fatalError()
+            }
+            if error != nil {
+                print(error)
+            }
+        }
+        
+        
+        dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0)) {
+            self.progressIndicator.incrementBy(1)
+        }
+    }
+    
+    func onExport() {
+        dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0)) {
+            self.progressIndicator.stopAnimation(self)
         }
     }
 
