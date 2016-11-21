@@ -17,7 +17,7 @@ struct Book {
 class ViewController: NSViewController, NSTableViewDataSource {
     @IBOutlet weak var tableView: NSTableView!
 
-    @IBAction func onClickExtractButton(sender: AnyObject) {
+    @IBAction func onClickExtractButton(_ sender: AnyObject) {
         self.progressIndicator.startAnimation(self)
 
         let exportDir = self.getExportDirectory()?.path
@@ -25,7 +25,7 @@ class ViewController: NSViewController, NSTableViewDataSource {
             return
         }
 
-        dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0)) {
+        DispatchQueue.global(qos: DispatchQoS.QoSClass.userInitiated).async {
             self.runExport(exportDir!)
         }
     }
@@ -40,25 +40,25 @@ class ViewController: NSViewController, NSTableViewDataSource {
         self.getUserBooks()
         self.progressIndicator.maxValue = Double(self.books.count)
         self.progressIndicator.minValue = 0
-        self.progressIndicator.indeterminate = false
-        self.tableView.setDataSource(self)
+        self.progressIndicator.isIndeterminate = false
+        self.tableView.dataSource = self
     }
 
-    override var representedObject: AnyObject? {
+    override var representedObject: Any? {
         didSet {
         // Update the view, if already loaded.
         }
     }
     
-    func runExport(exportDir: String) {
-        let filemanager = NSFileManager()
+    func runExport(_ exportDir: String) {
+        let filemanager = FileManager()
         var error: NSError?
         
-        let isDir = UnsafeMutablePointer<ObjCBool>.alloc(1)
-        let exists = filemanager.fileExistsAtPath(exportDir, isDirectory: isDir)
-        if !exists && isDir.memory {
+        let isDir = UnsafeMutablePointer<ObjCBool>.allocate(capacity: 1)
+        let exists = filemanager.fileExists(atPath: exportDir, isDirectory: isDir)
+        if !exists && isDir.pointee.boolValue {
             do {
-                try filemanager.createDirectoryAtPath(exportDir, withIntermediateDirectories: false, attributes: nil)
+                try filemanager.createDirectory(atPath: exportDir, withIntermediateDirectories: false, attributes: nil)
             } catch let error1 as NSError {
                 error = error1
             } catch {
@@ -67,7 +67,7 @@ class ViewController: NSViewController, NSTableViewDataSource {
         }
         
         if error != nil {
-            print(error)
+            print(error as Any)
         }
         
         for book in self.books {
@@ -77,39 +77,39 @@ class ViewController: NSViewController, NSTableViewDataSource {
         self.onExport()
     }
     
-    func exportBook(filemanager: NSFileManager, exportDir: String, book: Book) {
+    func exportBook(_ filemanager: FileManager, exportDir: String, book: Book) {
         if let targetPath = self.targetPath(book) {
-            if filemanager.fileExistsAtPath(exportDir + "/" + targetPath) {
-                self.progressIndicator.incrementBy(1)
+            if filemanager.fileExists(atPath: exportDir + "/" + targetPath) {
+                self.progressIndicator.increment(by: 1)
                 return
             }
             
             var error: NSError?
             do {
-                try filemanager.copyItemAtPath(book.path, toPath: exportDir + "/" + targetPath)
+                try filemanager.copyItem(atPath: book.path, toPath: exportDir + "/" + targetPath)
             } catch let error1 as NSError {
                 error = error1
             } catch {
                 fatalError()
             }
             if error != nil {
-                print(error)
+                print(error ?? "Unknown error")
             }
         }
         
         
-        dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0)) {
-            self.progressIndicator.incrementBy(1)
+        DispatchQueue.global(qos: DispatchQoS.QoSClass.default).async {
+            self.progressIndicator.increment(by: 1)
         }
     }
     
     func onExport() {
-        dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0)) {
+        DispatchQueue.global(qos: DispatchQoS.QoSClass.default).async {
             self.progressIndicator.stopAnimation(self)
         }
     }
 
-    func numberOfRowsInTableView(tableView: NSTableView) -> Int {
+    func numberOfRows(in tableView: NSTableView) -> Int {
         if tableView != self.tableView {
             return 0
         }
@@ -117,7 +117,7 @@ class ViewController: NSViewController, NSTableViewDataSource {
         return self.books.count
     }
 
-    func tableView(tableView: NSTableView, objectValueForTableColumn tableColumn: NSTableColumn?, row: Int) -> AnyObject? {
+    func tableView(_ tableView: NSTableView, objectValueFor tableColumn: NSTableColumn?, row: Int) -> Any? {
         if tableView != self.tableView {
             return nil
         }
@@ -137,7 +137,7 @@ class ViewController: NSViewController, NSTableViewDataSource {
         }
     }
 
-    func getExportDirectory() -> NSURL? {
+    func getExportDirectory() -> URL? {
         let openDlg = NSOpenPanel()
         openDlg.canChooseDirectories = true
         openDlg.canChooseFiles = false
@@ -151,7 +151,7 @@ class ViewController: NSViewController, NSTableViewDataSource {
         return nil
     }
 
-    private func targetPath(book: Book) -> String? {
+    fileprivate func targetPath(_ book: Book) -> String? {
         if book.displayName != "" {
             if let itemName = book.itemName {
                 return itemName + "." + (book.path as NSString).pathExtension
@@ -161,19 +161,19 @@ class ViewController: NSViewController, NSTableViewDataSource {
         return book.displayName
     }
     
-    private func getUserBooks() {
+    fileprivate func getUserBooks() {
         let info = self.getUserBooksPlist()
-        if let infoBooks: AnyObject = info?.objectForKey("Books") {
+        if let infoBooks: AnyObject = info?.object(forKey: "Books") as AnyObject? {
             for info in infoBooks as! [AnyObject] {
-                let path = info.objectForKey("path") as! String
-                let displayName = info.objectForKey("BKDisplayName") as! String
-                let itemName = info.objectForKey("itemName") as? String
+                let path = info.object(forKey: "path") as! String
+                let displayName = info.object(forKey: "BKDisplayName") as! String
+                let itemName = info.object(forKey: "itemName") as? String
                 self.books.append(Book(itemName: itemName, displayName: displayName, path: path))
             }
         }
     }
 
-    private func getUserBooksPlist() -> NSDictionary? {
+    fileprivate func getUserBooksPlist() -> NSDictionary? {
         let home = NSHomeDirectory()
         let path = home + "/Library/Containers/com.apple.BKAgentService/Data/Documents/iBooks/Books/Books.plist"
         return NSDictionary(contentsOfFile: path)
